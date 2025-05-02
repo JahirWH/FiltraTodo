@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FiltraTodo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white text-black">
+    <header class="border-b border-black p-4">
+        <h1 class="text-2xl font-bold text-center">FiltraTodo</h1>
+    </header>
+    <main class="p-6">
+        <section id="upload" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Subir Archivo</h2>
+            <form class="space-y-4">
+                <div>
+                    <label for="file" class="block font-medium">Selecciona un archivo:</label>
+                    <input type="file" id="file" name="file" class="w-full p-2 border border-black rounded">
+                </div>
+                <button type="submit" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Subir</button>
+            </form>
+        </section>
+        <section id="filters" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Filtrar Datos</h2>
+            <div class="space-y-4">
+                <button class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Nombre</button>
+                <button class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Edad</button>
+                <button class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Fecha</button>
+            </div>
+        </section>
+    </main>
+    <footer class="border-t border-black text-center p-4">
+        <p>&copy; 2023 FiltraTodo. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>
