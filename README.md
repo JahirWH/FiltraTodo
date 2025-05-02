@@ -2,6 +2,9 @@
 
 FiltraTodo es una aplicación web simple que te permite subir archivos CSV o Excel y filtrarlos por diferentes criterios como nombre, edad o fecha.
 
+
+![captura](banner.webp)
+
 ## Requisitos previos
 
 Para ejecutar esta aplicación necesitarás:
