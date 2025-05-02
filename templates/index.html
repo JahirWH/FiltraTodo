@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FiltraTodo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white text-black">
+    <header class="border-b border-black p-4">
+        <h1 class="text-2xl font-bold text-center">FiltraTodo</h1>
+    </header>
+    <main class="p-6">
+        <section id="upload" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Subir Archivo</h2>
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label for="file" class="block font-medium">Selecciona un archivo:</label>
+                    <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" class="w-full p-2 border border-black rounded">
+                    <p class="text-sm text-gray-500 mt-1">Formatos soportados: CSV, Excel (.xlsx, .xls)</p>
+                </div>
+                <button type="submit" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Subir</button>
+            </form>
+            <div id="uploadStatus" class="mt-4 hidden">
+                <div class="p-3 rounded border border-black"></div>
+            </div>
+        </section>
+        <section id="filters" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Filtrar Datos</h2>
+            <div class="space-y-4">
+                <button onclick="filterData('name')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Nombre</button>
+                <button onclick="filterData('email')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Email</button>
+                <button onclick="filterData('phone')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Teléfono</button>
+                <button onclick="filterData('address')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Dirección</button>
+                <button onclick="filterData('age')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Edad</button>
+                <button onclick="filterData('date')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Fecha</button>
+                <button onclick="filterData('city')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrado por Ciudad</button>
+            </div>
+        </section>
+        <section id="results" class="mb-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Resultados</h2>
+            <div id="resultContent" class="space-y-4 border border-black p-4 rounded">
+                <!-- Aquí se mostrará el resultado del filtrado -->
+            </div>
+        </section>
+    </main>
+    <footer class="border-t border-black text-center p-4">
+        <p>&copy; 2023 FiltraTodo. Todos los derechos reservados.</p>
+    </footer>
+    <script>
+        // Mostrar la sección de filtros solo después de subir un archivo
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('file');
+            
+            if (fileInput.files.length === 0) {
+                showStatus('Por favor selecciona un archivo', 'error');
+                return;
+            }
+            
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                showStatus('Subiendo archivo...', 'info');
+                
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showStatus('¡Archivo subido correctamente!', 'success');
+                    document.getElementById('filters').classList.remove('hidden');
+                } else {
+                    showStatus(`Error: ${result.error || 'Algo salió mal'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+        
+        async function filterData(filterType) {
+            try {
+                showStatus('Filtrando datos...', 'info');
+                
+                const response = await fetch('/filter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filter_type: filterType })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showStatus(`Filtrado completado: ${result.message}`, 'success');
+                    displayResults(result);
+                } else {
+                    showStatus(`Error: ${result.error || 'Algo salió mal'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsSection = document.getElementById('results');
+            const resultsContent = document.getElementById('resultContent');
+            
+            let html = `
+                <div class="mb-4">
+                    <p class="font-medium">${data.message}</p>
+                    <p>Número de filas: ${data.row_count}</p>
+                </div>
+                <div class="mb-4">
+                    <a href="/uploads/${data.filtered_file}" 
+                       class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white inline-block">
+                        Descargar archivo filtrado
+                    </a>
+                </div>
+            `;
+            
+            // Mostrar vista previa
+            if (data.preview && data.preview.length > 0) {
+                html += '<div class="overflow-x-auto"><table class="min-w-full border border-black">';
+                
+                // Cabeceras
+                html += '<thead><tr>';
+                Object.keys(data.preview[0]).forEach(key => {
+                    html += `<th class="px-4 py-2 text-left border-b border-black">${key}</th>`;
+                });
+                html += '</tr></thead>';
+                
+                // Filas
+                html += '<tbody>';
+                data.preview.forEach(row => {
+                    html += '<tr>';
+                    Object.values(row).forEach(value => {
+                        html += `<td class="px-4 py-2 border-b border-black">${value !== null ? value : ''}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            
+            resultsContent.innerHTML = html;
+            resultsSection.classList.remove('hidden');
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('uploadStatus');
+            const messageDiv = statusDiv.querySelector('div');
+            
+            messageDiv.textContent = message;
+            statusDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
