@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,21 +11,54 @@
         <h1 class="text-2xl font-bold text-center">FiltraTodo</h1>
     </header>
     <main class="p-6">
-        <section id="upload" class="mb-8">
+        <!-- Upload Section -->
+        <section id="upload" class="mb-8 border border-black rounded-lg p-4">
             <h2 class="text-xl font-semibold mb-4">Subir Archivo</h2>
             <form id="uploadForm" class="space-y-4">
-                <div>
-                    <label for="file" class="block font-medium">Selecciona un archivo:</label>
-                    <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" class="w-full p-2 border border-black rounded">
-                    <p class="text-sm text-gray-500 mt-1">Formatos soportados: CSV, Excel (.xlsx, .xls)</p>
+                <div id="dropZone" class="border-2 border-dashed border-black rounded-lg p-8 text-center cursor-pointer hover:bg-gray-100">
+                    <div class="space-y-2">
+                        <p class="font-medium">Arrastra tu archivo aquí</p>
+                        <p class="text-gray-600">o haz clic para seleccionar</p>
+                        <input type="file" id="file" name="file" accept=".csv,.xlsx,.xls" class="hidden">
+                        <div class="flex justify-center space-x-3 text-xs mt-2">
+                            <span class="bg-gray-100 px-2 py-1 rounded">CSV</span>
+                            <span class="bg-gray-100 px-2 py-1 rounded">XLSX</span>
+                            <span class="bg-gray-100 px-2 py-1 rounded">XLS</span>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Subir</button>
+                
+                <div id="selectedFile" class="hidden mt-4 p-4 bg-gray-100 rounded-lg border border-black">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p id="fileName" class="font-medium"></p>
+                            <p id="fileSize" class="text-sm text-gray-600"></p>
+                        </div>
+                        <button type="button" id="removeFile" class="text-gray-600 hover:text-black">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" id="uploadBtn" class="w-full border border-black px-4 py-2 rounded hover:bg-black hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="uploadBtnText">Subir Archivo</span>
+                </button>
             </form>
+            
             <div id="uploadStatus" class="mt-4 hidden">
-                <div class="p-3 rounded border border-black"></div>
+                <div class="p-3 rounded border border-black flex items-center space-x-3">
+                    <p id="statusMessage" class="font-medium"></p>
+                </div>
+                <div id="progressBar" class="hidden mt-2 w-full bg-gray-200 rounded-full h-1">
+                    <div class="bg-black h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
             </div>
         </section>
-        <section id="filters" class="mb-8">
+
+        <!-- Filters Section -->
+        <section id="filters" class="mb-8 border border-black rounded-lg p-4 hidden">
             <h2 class="text-xl font-semibold mb-4">Filtrar Datos</h2>
             <div class="space-y-4">
                 <button onclick="filterData('name')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrar por Nombre</button>
@@ -37,33 +70,94 @@
                 <button onclick="filterData('city')" class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white">Filtrado por Ciudad</button>
             </div>
         </section>
-        <section id="results" class="mb-8 hidden">
+
+        <!-- Results Section -->
+        <section id="results" class="mb-8 border border-black rounded-lg p-4 hidden">
             <h2 class="text-xl font-semibold mb-4">Resultados</h2>
-            <div id="resultContent" class="space-y-4 border border-black p-4 rounded">
-                <!-- Aquí se mostrará el resultado del filtrado -->
+            <div id="resultContent" class="space-y-4">
+                <!-- Results will be populated here -->
             </div>
         </section>
     </main>
+
     <footer class="border-t border-black text-center p-4">
-        <p>&copy; 2023 FiltraTodo. Todos los derechos reservados.</p>
+        <p>&copy; 2025 FiltraTodo.</p>
     </footer>
+
     <script>
-        // Mostrar la sección de filtros solo después de subir un archivo
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        let selectedFile = null;
+
+        // File upload handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('file');
+        const uploadForm = document.getElementById('uploadForm');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        // Drag and drop functionality
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-gray-200');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('bg-gray-200');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-gray-200');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelection(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelection(file) {
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            selectedFileDiv.classList.remove('hidden');
+            dropZone.style.display = 'none';
+        }
+
+        document.getElementById('removeFile').addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            selectedFileDiv.classList.add('hidden');
+            dropZone.style.display = 'block';
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Upload form submission
+        uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const formData = new FormData();
-            const fileInput = document.getElementById('file');
-            
-            if (fileInput.files.length === 0) {
+            if (!selectedFile) {
                 showStatus('Por favor selecciona un archivo', 'error');
                 return;
             }
             
-            formData.append('file', fileInput.files[0]);
+            const formData = new FormData();
+            formData.append('file', selectedFile);
             
             try {
                 showStatus('Subiendo archivo...', 'info');
+                showProgress(true);
+                updateUploadButton(true);
                 
                 const response = await fetch('/upload', {
                     method: 'POST',
@@ -73,19 +167,29 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showStatus('¡Archivo subido correctamente!', 'success');
-                    document.getElementById('filters').classList.remove('hidden');
+                    showStatus('Archivo subido correctamente', 'success');
+                    setTimeout(() => {
+                        document.getElementById('filters').classList.remove('hidden');
+                        document.getElementById('filters').scrollIntoView({ behavior: 'smooth' });
+                    }, 1000);
                 } else {
                     showStatus(`Error: ${result.error || 'Algo salió mal'}`, 'error');
                 }
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                showProgress(false);
+                updateUploadButton(false);
             }
         });
-        
+
+        // Filter data function
         async function filterData(filterType) {
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => btn.disabled = true);
+            
             try {
-                showStatus('Filtrando datos...', 'info');
+                showStatus('Procesando datos...', 'info');
                 
                 const response = await fetch('/filter', {
                     method: 'POST',
@@ -96,26 +200,32 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showStatus(`Filtrado completado: ${result.message}`, 'success');
+                    showStatus(`${result.message}`, 'success');
                     displayResults(result);
+                    setTimeout(() => {
+                        document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+                    }, 500);
                 } else {
                     showStatus(`Error: ${result.error || 'Algo salió mal'}`, 'error');
                 }
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                filterBtns.forEach(btn => btn.disabled = false);
             }
         }
-        
+
+        // Display results
         function displayResults(data) {
             const resultsSection = document.getElementById('results');
             const resultsContent = document.getElementById('resultContent');
             
             let html = `
-                <div class="mb-4">
-                    <p class="font-medium">${data.message}</p>
-                    <p>Número de filas: ${data.row_count}</p>
-                </div>
-                <div class="mb-4">
+                <div class="bg-gray-100 rounded-lg p-4 mb-4">
+                    <div class="mb-2">
+                        <h3 class="font-semibold">${data.message}</h3>
+                        <p class="text-gray-600">Total de registros: <span class="font-medium">${data.row_count.toLocaleString()}</span></p>
+                    </div>
                     <a href="/uploads/${data.filtered_file}" 
                        class="border border-black px-4 py-2 rounded hover:bg-black hover:text-white inline-block">
                         Descargar archivo filtrado
@@ -123,39 +233,101 @@
                 </div>
             `;
             
-            // Mostrar vista previa
+            // Show preview
             if (data.preview && data.preview.length > 0) {
-                html += '<div class="overflow-x-auto"><table class="min-w-full border border-black">';
+                html += `
+                    <div class="border border-black rounded-lg overflow-hidden">
+                        <div class="bg-gray-100 px-4 py-2 border-b border-black">
+                            <h4 class="font-medium">Vista Previa (Primeras 5 filas)</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                `;
                 
-                // Cabeceras
-                html += '<thead><tr>';
+                // Headers
+                html += '<thead class="bg-gray-100"><tr>';
                 Object.keys(data.preview[0]).forEach(key => {
-                    html += `<th class="px-4 py-2 text-left border-b border-black">${key}</th>`;
+                    html += `<th class="px-4 py-2 text-left text-sm font-medium border-b border-black">${key}</th>`;
                 });
                 html += '</tr></thead>';
                 
-                // Filas
-                html += '<tbody>';
-                data.preview.forEach(row => {
-                    html += '<tr>';
+                // Rows
+                html += '<tbody class="divide-y divide-gray-200">';
+                data.preview.forEach((row, index) => {
+                    html += `<tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100">`;
                     Object.values(row).forEach(value => {
-                        html += `<td class="px-4 py-2 border-b border-black">${value !== null ? value : ''}</td>`;
+                        const displayValue = value !== null && value !== undefined ? value : '-';
+                        html += `<td class="px-4 py-2 text-sm border-b border-gray-200">${displayValue}</td>`;
                     });
                     html += '</tr>';
                 });
-                html += '</tbody></table></div>';
+                html += '</tbody></table></div></div>';
             }
             
             resultsContent.innerHTML = html;
             resultsSection.classList.remove('hidden');
         }
-        
+
+        // Status display functions
         function showStatus(message, type) {
             const statusDiv = document.getElementById('uploadStatus');
-            const messageDiv = statusDiv.querySelector('div');
+            const messageDiv = document.getElementById('statusMessage');
+            const container = statusDiv.querySelector('div');
             
             messageDiv.textContent = message;
+            
+            container.className = `p-3 rounded border border-black flex items-center space-x-3 ${getStatusClass(type)}`;
             statusDiv.classList.remove('hidden');
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 4000);
+            }
+        }
+
+        function getStatusClass(type) {
+            const classes = {
+                'success': 'bg-green-100 text-green-800',
+                'error': 'bg-red-100 text-red-800',
+                'info': 'bg-gray-100 text-gray-800'
+            };
+            return classes[type] || classes.info;
+        }
+
+        function showProgress(show) {
+            const progressBar = document.getElementById('progressBar');
+            if (show) {
+                progressBar.classList.remove('hidden');
+                let width = 0;
+                const interval = setInterval(() => {
+                    width += Math.random() * 25;
+                    if (width >= 85) {
+                        width = 85;
+                        clearInterval(interval);
+                    }
+                    progressBar.querySelector('div').style.width = width + '%';
+                }, 200);
+            } else {
+                progressBar.querySelector('div').style.width = '100%';
+                setTimeout(() => {
+                    progressBar.classList.add('hidden');
+                    progressBar.querySelector('div').style.width = '0%';
+                }, 300);
+            }
+        }
+
+        function updateUploadButton(uploading) {
+            const btn = document.getElementById('uploadBtn');
+            const text = document.getElementById('uploadBtnText');
+            
+            if (uploading) {
+                btn.disabled = true;
+                text.innerHTML = 'Subiendo...';
+            } else {
+                btn.disabled = false;
+                text.innerHTML = 'Subir Archivo';
+            }
         }
     </script>
 </body>
