@@ -19,6 +19,7 @@ def upload_file():
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
+    print(f"Archivo recibido: {file.filename}")
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
@@ -51,6 +52,7 @@ def filter_data():
 
         # Obtener información de columnas y datos filtrados
         columns = df.columns.tolist()
+        print(f"Columnas encontradas: {columns}")
 
         filtered_data = None
         message = ""
@@ -58,17 +60,25 @@ def filter_data():
         if filter_type == 'name':
             # Buscar columnas que puedan contener nombres
             name_columns = [col for col in columns if any(s in col.lower() for s in ['nombre', 'name', 'apellido', 'last'])]
-            if name_columns:
+            name_columns = list(set(name_columns))  # Eliminar duplicados
+            name_columns_english = [col for col in name_columns if any(s in col.lower() for s in ['name', 'first', 'last'])]
+            print(f"Columnas de nombres encontradas: {name_columns , name_columns_english}")
+            if name_columns :
                 # Ordenar por la primera columna de nombre encontrada
                 df = df.sort_values(by=name_columns[0])
+
                 message = f"Datos filtrados por {name_columns[0]}"
+            elif name_columns_english:
+                # Ordenar por la primera columna de nombre en inglés encontrada
+                df = df.sort_values(by=name_columns_english[0])
+                message = f"Datos filtrados por {name_columns_english[0]}"
 
             else:
                 message = "No se encontraron columnas de nombres"
 
         elif filter_type == 'age':
             # Buscar columnas que puedan contener edades
-            age_columns = [col for col in columns if any(s in col.lower() for s in ['edad', 'age', 'años'])]
+            age_columns = [col for col in columns if any(s in col.lower() for s in ['edad', 'age', 'años','year'])]
             if age_columns:
                 # Ordenar por la primera columna de edad encontrada
                 df = df.sort_values(by=age_columns[0])
@@ -94,6 +104,18 @@ def filter_data():
                 message = f"Datos filtraos por {email_columns[0]}"
             else:
                 message = f"No se encontraron columnas de {filter_type}"
+        elif filter_type == 'cyty':
+            # Busca si tiene una ciudad
+            city_columns = [col for col in columns if any(s in col.lower() for s in ['ciudad', 'city', 'town', 'localidad','country'])]
+            if city_columns:
+        
+                df = df.sort_values(by=city_columns[0])
+
+                message = f"Datos filtrados por {city_columns[0]}"
+            else:
+                message = f"No se encontraron columnas de {filter_type}"
+        #Pendiente, agregar lectura de filas y columnas una por una y agregar un diccionario con los datos a 
+        # encontrar 
 
         # Guardar datos filtrados en un nuevo archivo
         filtered_file = f"filtered_{filter_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
