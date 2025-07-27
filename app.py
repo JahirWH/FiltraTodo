@@ -7,7 +7,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = './uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['CURRENT_FILE'] = None  # Variable para almacenar el archivo actual
+
 
 @app.route('/')
 def index():
@@ -16,6 +16,42 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'file no found'}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({'error': 'Nombre de archivo vacío'}), 400
+
+    # Guarda el archivo
+    filename = file.filename
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+
+    # Ahora sí defines la ruta del archivo cargado
+    app.config['CURRENT_FILE'] = filepath
+
+    # Validación por extensión
+    if filename.endswith('.csv'):
+        with open(filepath, 'r') as f:
+            first_line = f.readline().strip()
+            if not first_line:
+                return jsonify({'error': 'El archivo CSV está vacío'}), 400
+            return jsonify({'mensaje': 'Archivo CSV cargado correctamente'})
+
+    elif filename.endswith(('.xlsx', '.xls')):
+        print(f"Abriendo archivo Excel: {filepath}")
+        with pd.ExcelFile(filepath) as xls:
+            file = pd.read_excel(xls, sheet_name=None)
+            if not file:
+                return jsonify({'error': 'El archivo Excel no contiene hojas'}), 400
+            return jsonify({'mensaje': 'Archivo Excel cargado correctamente'})
+
+    else:
+        return jsonify({'error': 'Extensión de archivo no soportada'}), 400
+
+            
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
@@ -43,6 +79,7 @@ def filter_data():
     if not app.config['CURRENT_FILE']:
         return jsonify({'error': 'No hay archivo cargado para filtrar'}), 400
 
+ 
     try:
         # Determinar el tipo de archivo y cargarlo con pandas
         file_path = app.config['CURRENT_FILE']
