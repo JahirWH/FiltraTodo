@@ -13,6 +13,7 @@ app.config['CURRENT_FILE'] = None  # Variable para almacenar el archivo actual
 def index():
     return render_template('index.html')
 
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -56,6 +57,9 @@ def filter_data():
 
         filtered_data = None
         message = ""
+
+        filter_city = ['ciudad', 'city', 'town', 'localidad', 'country']
+        filter_phone = ['teléfono', 'phone', 'número', 'number']
 
         if filter_type == 'name':
             # Buscar columnas que puedan contener nombres
@@ -104,7 +108,8 @@ def filter_data():
                 message = f"Datos filtraos por {email_columns[0]}"
             else:
                 message = f"No se encontraron columnas de {filter_type}"
-        elif filter_type == 'cyty':
+
+        elif filter_type == filter_city:
             # Busca si tiene una ciudad
             city_columns = [col for col in columns if any(s in col.lower() for s in ['ciudad', 'city', 'town', 'localidad','country'])]
             if city_columns:
@@ -114,6 +119,16 @@ def filter_data():
                 message = f"Datos filtrados por {city_columns[0]}"
             else:
                 message = f"No se encontraron columnas de {filter_type}"
+
+        elif filter_type == filter_phone:
+            # Busca si tiene un teléfono
+            phone_columns = [col for col in columns if any(s in col.lower() for s in ['teléfono', 'phone', 'número', 'number'])]
+            if phone_columns:
+                df = df.sort_values(by=phone_columns[0])
+                message = f"Datos filtrados por {phone_columns[0]}"
+            else:
+                message = f"No se encontraron columnas de {filter_type}"
+        
         #Pendiente, agregar lectura de filas y columnas una por una y agregar un diccionario con los datos a 
         # encontrar 
 
